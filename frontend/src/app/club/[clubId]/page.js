@@ -27,6 +27,7 @@ function ClubPage() {
     <div>
       <h1>{club.name}</h1>
       <p>{club.description}</p>
+      <p>{club.address}</p>
       {/* Display other club information */}
     </div>
   );
