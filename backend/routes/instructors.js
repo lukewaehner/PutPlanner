@@ -8,6 +8,17 @@ router.route("/").get((req, res) => {
     .catch((err) => res.status(400).json("Error: " + err));
 });
 
+router.route("/:id").get((req, res) => {
+  Instructor.findById(req.params.id)
+    .then((instructor) => {
+      if (!instructor) {
+        return res.status(404).json("Instructor not found");
+      }
+      res.json(instructor);
+    })
+    .catch((err) => res.status(400).json("Error: " + err));
+});
+
 router.route("/add").post((req, res) => {
   const name = req.body.name;
   const bio = req.body.bio;

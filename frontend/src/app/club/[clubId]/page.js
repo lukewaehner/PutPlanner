@@ -24,7 +24,6 @@ function ClubPage() {
         }
 
         const data = await response.json();
-        console.log("Instructors:", instructors);
         setClub(data);
       } catch (error) {
         console.error("Error fetching club:", error);
