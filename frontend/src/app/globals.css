@@ -70,7 +70,7 @@ body {
 }
 
 #map {
-  background-color: #d0d0d0;
+  background: radial-gradient(white, rgb(205, 205, 205));
 }
 
 @layer utilities {
