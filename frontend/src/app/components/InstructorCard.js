@@ -1,43 +1,50 @@
-import React, { useState, useEffect } from "react";
-import { Box, Heading, Text, Spinner, Flex, Avatar } from "@chakra-ui/react";
+import React from "react";
+import {
+  Box,
+  Heading,
+  Text,
+  Flex,
+  Avatar,
+  Button,
+  Skeleton,
+} from "@chakra-ui/react";
+import { useRouter } from "next/navigation";
 
 function InstructorCard({ instructor }) {
-  const [instructorData, setInstructorData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  // Destructure instructor data directly from props
+  const { name, rating, bio, picture } = instructor;
+  const router = useRouter();
 
-  useEffect(() => {
-    const fetchInstructorData = async () => {
-      if (!instructor) {
-        setLoading(false);
-        return;
-      }
+  const handleBooking = () => {
+    router.push(`/booking?instructorId=${instructor._id}`);
+  };
 
-      try {
-        setLoading(true);
-        const response = await fetch(
-          `http://localhost:5001/instructors/${instructor}`
-        );
-        if (!response.ok) {
-          throw new Error("Network response was not ok");
-        }
-        const data = await response.json();
-        setInstructorData(data);
-      } catch (error) {
-        console.error("Error fetching instructor:", error);
-        setError(error.message);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Skeleton loader for the card
+  if (!name && !rating && !bio && !picture) {
+    return (
+      <Box
+        borderWidth="1px"
+        borderRadius="lg"
+        overflow="hidden"
+        p={4}
+        m={2}
+        maxWidth="400px"
+        minWidth="350px"
+        minHeight="400px"
+        textAlign="center"
+      >
+        <Flex direction="column" align="center" mb={4}>
+          <Skeleton height="20px" width="50%" mb={2} />
+          <Avatar size="xl" mb={4} />
+          <Skeleton height="16px" width="80%" mb={2} />
+        </Flex>
+        <Skeleton height="16px" width="50%" mb={2} />
+        <Skeleton height="16px" width="80%" />
+      </Box>
+    );
+  }
 
-    fetchInstructorData();
-  }, [instructor]);
-
-  if (loading) return <Spinner />;
-  if (error) return <Text color="red.500">Error: {error}</Text>;
-  if (!instructorData) return null;
-
+  // Render the instructor card with fetched data
   return (
     <Box
       borderWidth="1px"
@@ -45,25 +52,31 @@ function InstructorCard({ instructor }) {
       overflow="hidden"
       p={4}
       m={2}
-      maxWidth="300px"
-      minWidth="250px"
+      maxWidth="400px"
+      minWidth="350px"
+      minHeight="400px"
       textAlign="center"
     >
       <Flex direction="column" align="center" mb={4}>
         <Heading as="h3" size="md" mb={2}>
-          {instructorData.name || "Unknown Name"}
+          {name || "Unknown Name"}
         </Heading>
         <Avatar
           size="xl"
-          name={instructorData.name || "Unknown"}
-          src={instructorData.picture}
+          name={name || "Unknown"}
+          src={picture}
           mb={4}
+          borderColor="gray.500"
+          borderWidth="2px"
         />
         <Text fontSize="sm" mb={2}>
-          Rating: {instructorData.rating || "Unknown Rating"}
+          Rating: {rating || "Unknown Rating"}
         </Text>
       </Flex>
-      <Text fontSize="sm">{instructorData.bio || "No bio available"}</Text>
+      <Text fontSize="sm">{bio || "No bio available"}</Text>
+      <Button my={6} onClick={handleBooking}>
+        Book with me!
+      </Button>
     </Box>
   );
 }

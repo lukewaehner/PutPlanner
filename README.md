@@ -26,8 +26,4 @@ npm run dev
 
 # Environment Variables
 
-.env.local placed right in frontend folder
-NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSyCGUHUy7sYIs--votUzbDuEGYIWyz2oIGM
-
-.env placed right in backend folder
-MONGODB_URI=mongodb+srv://<username>:<password>@putplanner.vdhznnu.mongodb.net/?retryWrites=true&w=majority&appName=PutPlanner
+Load the envrionment variables in the corresponding folders from the docs.

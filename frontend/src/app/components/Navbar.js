@@ -1,7 +1,32 @@
 import React from "react";
-import { Box, Flex, Image, Link, Button } from "@chakra-ui/react";
+import {
+  Box,
+  Flex,
+  Image,
+  Link,
+  Button,
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuList,
+} from "@chakra-ui/react";
+import { useAuth } from "../hooks/AuthContext";
+import { useRouter } from "next/navigation";
+import { ChevronDownIcon } from "@chakra-ui/icons";
 
 const Navbar = ({ activeSection }) => {
+  const { userName } = useAuth();
+
+  const Router = useRouter();
+
+  const handleSettings = () => {
+    Router.push("/settings");
+  };
+
+  const handleDashboard = () => {
+    Router.push("/dashboard");
+  };
+
   return (
     <Box
       as="nav"
@@ -42,15 +67,37 @@ const Navbar = ({ activeSection }) => {
             </Link>
           </li>
         </Flex>
-        <Flex>
-          <Link href="/login">
-            <Button variant="outline" mr="2">
-              Login
-            </Button>
-          </Link>
-          <Link href="/register">
-            <Button>Register</Button>
-          </Link>
+        <Flex alignItems="center">
+          {userName ? (
+            <>
+              <Menu>
+                <MenuButton
+                  as={Button}
+                  rightIcon={<ChevronDownIcon />}
+                  mr={4}
+                  cursor="pointer"
+                >
+                  Welcome, {userName}
+                </MenuButton>
+                <MenuList>
+                  <MenuItem onClick={handleSettings}>Settings</MenuItem>
+                  <MenuItem onClick={handleDashboard}>Dashboard</MenuItem>
+                </MenuList>
+              </Menu>
+              <Button variant="outline">Logout</Button>
+            </>
+          ) : (
+            <>
+              <Link href="/login">
+                <Button variant="outline" mr="2">
+                  Login
+                </Button>
+              </Link>
+              <Link href="/register">
+                <Button>Register</Button>
+              </Link>
+            </>
+          )}
         </Flex>
       </Flex>
     </Box>

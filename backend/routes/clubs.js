@@ -44,6 +44,7 @@ router.route("/edit/:id").post((req, res) => {
 
 router.route("/:id").get((req, res) => {
   Club.findById(req.params.id)
+    .populate("instructors") // Populate the instructors field
     .then((club) => res.json(club))
     .catch((err) => res.status(400).json("Error: " + err));
 });
