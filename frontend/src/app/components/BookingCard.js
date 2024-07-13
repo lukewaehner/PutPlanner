@@ -1,10 +1,38 @@
-import React from "react";
+// "use client";
+import React, { useEffect } from "react";
 import { Box, Heading, Text, Flex, Avatar, Button } from "@chakra-ui/react";
 
 const BookingCard = ({ booking }) => {
   // Destructure booking properties
-  const { date, instructor, createdAt } = booking;
+  const { date, instructor, createdAt, startTime } = booking;
   const { name, bio, picture, rating } = instructor;
+
+  useEffect(() => {
+    console.log(date);
+  }, [date]);
+
+  const combineDateAndTime = (dateString, timeString) => {
+    const date = new Date(dateString);
+    const [hours, minutes] = timeString.split(":").map(Number);
+    date.setUTCHours(hours, minutes, 0, 0);
+    const userTimezoneOffset = date.getTimezoneOffset() * 60000;
+    const localDate = new Date(date.getTime() + userTimezoneOffset);
+    return localDate;
+  };
+
+  const formatDateTime = (date) => {
+    return date.toLocaleString("en-US", {
+      weekday: "short",
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  // Combine date and startTime
+  const combinedDateTime = combineDateAndTime(date, startTime);
 
   return (
     <Box
@@ -34,10 +62,10 @@ const BookingCard = ({ booking }) => {
           Rating: {rating || "Unknown Rating"}
         </Text>
         <Text fontSize="sm" mb={2}>
-          Date: {new Date(date).toLocaleString()}
+          Date: {formatDateTime(combinedDateTime)}
         </Text>
         <Text fontSize="sm" mb={2}>
-          Booked At: {new Date(createdAt).toLocaleString()}
+          Booked At: {formatDateTime(new Date(createdAt))}
         </Text>
       </Flex>
       <Button

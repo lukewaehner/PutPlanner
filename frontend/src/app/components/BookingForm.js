@@ -13,19 +13,29 @@ import {
   ModalHeader,
   ModalCloseButton,
   ModalBody,
+  ModalFooter,
   Text,
   Stack,
   useDisclosure,
   useToast,
+  RadioGroup,
+  Radio,
 } from "@chakra-ui/react";
+import { format } from "date-fns";
 import { useAuth } from "../hooks/AuthContext";
 
 const BookingForm = ({ instructorId }) => {
   const [availableDates, setAvailableDates] = useState([]);
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState(null);
+  const [slotDuration, setSlotDuration] = useState(30); // 30 minutes by default
   const { userId } = useAuth();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const {
+    isOpen: isDurationModalOpen,
+    onOpen: onDurationModalOpen,
+    onClose: onDurationModalClose,
+  } = useDisclosure();
   const toast = useToast();
 
   useEffect(() => {
@@ -55,7 +65,7 @@ const BookingForm = ({ instructorId }) => {
 
   const handleDateSelect = (date) => {
     setSelectedDate(date);
-    onOpen();
+    onDurationModalOpen();
   };
 
   const handleSlotSelect = (slot) => {
@@ -76,10 +86,11 @@ const BookingForm = ({ instructorId }) => {
     try {
       await axios.post(`http://localhost:5001/bookings`, {
         instructorId: instructorId,
-        userId: userId, // Replace with actual user ID
+        userId: userId,
         date: selectedSlot.date,
         startTime: selectedSlot.start,
         endTime: selectedSlot.end,
+        duration: slotDuration,
       });
       toast({
         title: "Booking Successful",
@@ -89,8 +100,8 @@ const BookingForm = ({ instructorId }) => {
         isClosable: true,
       });
       setSelectedSlot(null);
-      fetchAvailability(); // Refresh availability after booking
-      onClose(); // Close the modal after booking
+      fetchAvailability();
+      onClose();
     } catch (error) {
       toast({
         title: "Booking Failed",
@@ -104,19 +115,139 @@ const BookingForm = ({ instructorId }) => {
     }
   };
 
-  const generateTimeSlots = (start, end) => {
+  const formatDate = (dateString) => {
+    // Extract year, month, and day from the date string
+    const [year, month, day] = dateString.split("T")[0].split("-");
+    // Create a Date object using UTC
+    const date = new Date(Date.UTC(year, month - 1, day));
+    // Adjust for the user's timezone offset
+    const userTimezoneOffset = date.getTimezoneOffset() * 60000;
+    const localDate = new Date(date.getTime() + userTimezoneOffset);
+    // Format the adjusted date
+    return format(localDate, "MMMM d, yyyy");
+  };
+
+  const convertTo12HourFormat = (time24) => {
+    const [hours, minutes] = time24.split(":");
+    let period = "AM";
+    let hours12 = parseInt(hours, 10);
+
+    if (hours12 >= 12) {
+      period = "PM";
+      if (hours12 > 12) {
+        hours12 -= 12;
+      }
+    }
+
+    if (hours12 === 0) {
+      hours12 = 12;
+    }
+
+    return `${hours12}:${minutes} ${period}`;
+  };
+
+  const generateTimeSlots = (start, end, bookedSlots) => {
     const slots = [];
-    let currentTime = new Date(`1970-01-01T${start}:00`);
-    const endTime = new Date(`1970-01-01T${end}:00`);
+    let currentTime = new Date(`1970-01-01T${start}`);
+    const endTime = new Date(`1970-01-01T${end}`);
 
     while (currentTime < endTime) {
-      const slotStart = currentTime.toTimeString().slice(0, 5);
+      const slotStart24 = currentTime.toTimeString().slice(0, 5);
+      let slotEnd = new Date(currentTime.getTime() + 30 * 60000);
+
+      // Ensure slotEnd does not exceed the overall end time
+      if (slotEnd > endTime) {
+        slotEnd = endTime;
+      }
+
+      const slotEnd24 = slotEnd.toTimeString().slice(0, 5);
+
+      // Check if this slot is booked
+      const isSlotBooked = bookedSlots.some(
+        (bookedSlot) =>
+          bookedSlot.isBooked &&
+          ((slotStart24 >= bookedSlot.start && slotStart24 < bookedSlot.end) ||
+            (slotEnd24 > bookedSlot.start && slotEnd24 <= bookedSlot.end) ||
+            (slotStart24 < bookedSlot.start && slotEnd24 > bookedSlot.end))
+      );
+
+      slots.push({
+        start: slotStart24,
+        end: slotEnd24,
+        displayStart: convertTo12HourFormat(slotStart24),
+        displayEnd: convertTo12HourFormat(slotEnd24),
+        isAvailable: !isSlotBooked,
+      });
+
+      // Move to the next slot
       currentTime.setMinutes(currentTime.getMinutes() + 30);
-      const slotEnd = currentTime.toTimeString().slice(0, 5);
-      slots.push({ start: slotStart, end: slotEnd });
     }
 
     return slots;
+  };
+
+  const generateHourLongTimeSlots = (start, end, bookedSlots) => {
+    const slots = [];
+    let currentTime = new Date(`1970-01-01T${start}`);
+    const endTime = new Date(`1970-01-01T${end}`);
+
+    // Round the start time to the nearest top of the hour
+    if (currentTime.getMinutes() !== 0 || currentTime.getSeconds() !== 0) {
+      currentTime.setHours(currentTime.getHours() + 1);
+      currentTime.setMinutes(0);
+      currentTime.setSeconds(0);
+    }
+
+    while (currentTime < endTime) {
+      const slotStart24 = currentTime.toTimeString().slice(0, 5);
+      let slotEnd = new Date(currentTime.getTime() + 60 * 60000); // Add 60 minutes
+      const slotEnd24 = slotEnd.toTimeString().slice(0, 5);
+
+      // Check if this slot is booked
+      const isSlotBooked = bookedSlots.some(
+        (bookedSlot) =>
+          bookedSlot.isBooked &&
+          ((slotStart24 >= bookedSlot.start && slotStart24 < bookedSlot.end) ||
+            (slotEnd24 > bookedSlot.start && slotEnd24 <= bookedSlot.end) ||
+            (slotStart24 < bookedSlot.start && slotEnd24 > bookedSlot.end))
+      );
+
+      // Combine slots if the hour has mixed availability
+      const isAvailable =
+        bookedSlots.every(
+          (bookedSlot) =>
+            bookedSlot.start >= slotEnd24 ||
+            bookedSlot.end <= slotStart24 ||
+            bookedSlot.isBooked
+        ) || bookedSlots.length === 0;
+
+      slots.push({
+        start: slotStart24,
+        end: slotEnd24,
+        displayStart: convertTo12HourFormat(slotStart24),
+        displayEnd: convertTo12HourFormat(slotEnd24),
+        isAvailable: !isSlotBooked,
+        isMixedAvailability:
+          isAvailable &&
+          bookedSlots.some(
+            (bookedSlot) =>
+              bookedSlot.start < slotEnd24 &&
+              bookedSlot.end > slotStart24 &&
+              bookedSlot.isBooked
+          ),
+      });
+
+      // Move to the next hour slot
+      currentTime.setHours(currentTime.getHours() + 1);
+    }
+
+    return slots;
+  };
+
+  const handleDurationSelect = (duration) => {
+    setSlotDuration(parseInt(duration, 10));
+    onDurationModalClose();
+    onOpen();
   };
 
   return (
@@ -135,13 +266,12 @@ const BookingForm = ({ instructorId }) => {
             onClick={() => handleDateSelect(dateObj)}
           >
             <Text fontSize="lg" fontWeight="bold">
-              {new Date(dateObj.date).toDateString()}
+              {formatDate(dateObj.date)}
             </Text>
           </Box>
         ))}
       </Stack>
 
-      {/* Modal for selecting a time slot */}
       <Modal isOpen={isOpen} onClose={onClose} size="lg">
         <ModalOverlay />
         <ModalContent>
@@ -151,22 +281,65 @@ const BookingForm = ({ instructorId }) => {
             {selectedDate && (
               <Stack spacing={4}>
                 <Text fontSize="lg" fontWeight="bold">
-                  {new Date(selectedDate.date).toDateString()}
+                  {formatDate(selectedDate.date)}
                 </Text>
                 <Stack spacing={2}>
-                  {selectedDate.timeSlots.map((slot) => {
-                    // Split the time slots
-                    const timeSlots = generateTimeSlots(slot.start, slot.end);
+                  {selectedDate.timeSlots.flatMap((slot) => {
+                    const timeSlots =
+                      slotDuration === 30
+                        ? generateTimeSlots(
+                            slot.start,
+                            slot.end,
+                            selectedDate.timeSlots
+                          )
+                        : generateHourLongTimeSlots(
+                            slot.start,
+                            slot.end,
+                            selectedDate.timeSlots
+                          );
                     return timeSlots.map((timeSlot, index) => (
                       <Button
-                        key={`${selectedDate.date}-${timeSlot.start}-${timeSlot.end}`}
-                        onClick={() => handleSlotSelect(timeSlot)}
-                        isDisabled={slot.isBooked}
-                        bg={slot.isBooked ? "gray.200" : "blue.500"}
-                        color="white"
-                        _hover={{ bg: slot.isBooked ? "gray.300" : "blue.600" }}
+                        key={`${selectedDate.date}-${timeSlot.start}-${timeSlot.end}-${index}`}
+                        onClick={() =>
+                          timeSlot.isAvailable && handleSlotSelect(timeSlot)
+                        }
+                        bg={
+                          selectedSlot &&
+                          selectedSlot.start === timeSlot.start &&
+                          selectedSlot.end === timeSlot.end
+                            ? "blue.300"
+                            : timeSlot.isAvailable
+                            ? "blue.500"
+                            : "gray.300"
+                        }
+                        color={timeSlot.isAvailable ? "white" : "gray.500"}
+                        _hover={
+                          timeSlot.isAvailable
+                            ? {
+                                bg:
+                                  selectedSlot &&
+                                  selectedSlot.start === timeSlot.start &&
+                                  selectedSlot.end === timeSlot.end
+                                    ? "blue.300"
+                                    : "blue.600",
+                              }
+                            : undefined
+                        }
+                        cursor={
+                          timeSlot.isAvailable ? "pointer" : "not-allowed"
+                        }
+                        opacity={timeSlot.isAvailable ? 1 : 0.6}
+                        disabled={!timeSlot.isAvailable}
+                        border={
+                          selectedSlot &&
+                          selectedSlot.start === timeSlot.start &&
+                          selectedSlot.end === timeSlot.end
+                            ? "2px solid"
+                            : "none"
+                        }
+                        borderColor="gray.300"
                       >
-                        {timeSlot.start} - {timeSlot.end}
+                        {timeSlot.displayStart} - {timeSlot.displayEnd}
                       </Button>
                     ));
                   })}
@@ -178,7 +351,7 @@ const BookingForm = ({ instructorId }) => {
                     </Text>
                     <Text>
                       {new Date(selectedSlot.date).toDateString()}{" "}
-                      {selectedSlot.start} - {selectedSlot.end}
+                      {selectedSlot.displayStart} - {selectedSlot.displayEnd}
                     </Text>
                     <Button mt={4} colorScheme="blue" onClick={handleSubmit}>
                       Book This Slot
@@ -187,6 +360,39 @@ const BookingForm = ({ instructorId }) => {
                 )}
               </Stack>
             )}
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+
+      <Modal
+        isOpen={isDurationModalOpen}
+        onClose={onDurationModalClose}
+        size="md"
+      >
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Select Slot Duration</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Stack direction="column" spacing={4}>
+              <Button
+                onClick={() => handleDurationSelect(30)}
+                variant="outline"
+                _hover={{ bg: "blue.100", color: "blue.600" }} // Change color on hover
+                _active={{ bg: "blue.200" }} // Slightly darker background when active
+              >
+                30 Minutes
+              </Button>
+              <Button
+                onClick={() => handleDurationSelect(60)}
+                variant="outline"
+                _hover={{ bg: "blue.100", color: "blue.600" }} // Change color on hover
+                _active={{ bg: "blue.200" }} // Slightly darker background when active
+                mb={3}
+              >
+                1 Hour
+              </Button>
+            </Stack>
           </ModalBody>
         </ModalContent>
       </Modal>

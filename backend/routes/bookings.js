@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Booking = require("../models/booking.model");
 const Instructor = require("../models/instructor.model");
+const User = require("../models/user.model");
 
 // Route to get all bookings
 router.get("/", async (req, res) => {
@@ -36,9 +37,14 @@ router.post("/", async (req, res) => {
 
   try {
     const instructor = await Instructor.findById(instructorId);
+    const user = await User.findById(userId);
 
     if (!instructor) {
       return res.status(404).json("Instructor not found");
+    }
+
+    if (!user) {
+      return res.status(404).json("User not found");
     }
 
     // Find the availability for the given date
@@ -46,12 +52,6 @@ router.post("/", async (req, res) => {
       (av) =>
         av.date.toISOString().split("T")[0] ===
         bookingDate.toISOString().split("T")[0]
-    );
-
-    console.log("Booking date:", bookingDate);
-    console.log(
-      "Available dates:",
-      instructor.availability.map((av) => av.date)
     );
 
     if (!availability) {
@@ -62,20 +62,13 @@ router.post("/", async (req, res) => {
     const isSlotAvailable = availability.timeSlots.some((slot) => {
       const slotStart = slot.start;
       const slotEnd = slot.end;
-      console.log("Checking slot:", slotStart, "-", slotEnd);
-      console.log("Request:", startTime, "-", endTime);
-      console.log(
-        "Comparison:",
-        slotStart <= startTime,
-        slotEnd >= endTime,
-        !slot.isBooked
-      );
       return slotStart <= startTime && slotEnd >= endTime && !slot.isBooked;
     });
 
     if (!isSlotAvailable) {
       return res.status(400).json("Selected time slot is not available");
     }
+
     // Create a new booking
     const booking = new Booking({
       date: bookingDate,
@@ -90,11 +83,9 @@ router.post("/", async (req, res) => {
     // Update instructor availability
     availability.timeSlots = availability.timeSlots.flatMap((slot) => {
       if (slot.start <= startTime && slot.end >= endTime) {
-        // If the booking fits entirely within this slot
         if (slot.start === startTime && slot.end === endTime) {
           return [{ ...slot, isBooked: true }];
         } else {
-          // Split the slot if necessary
           const newSlots = [];
           if (slot.start < startTime) {
             newSlots.push({
@@ -122,6 +113,10 @@ router.post("/", async (req, res) => {
     });
 
     await instructor.save();
+
+    // Add booking to user's bookings array
+    user.bookings.push(booking._id);
+    await user.save();
 
     res.json("Booking successful!");
   } catch (err) {
