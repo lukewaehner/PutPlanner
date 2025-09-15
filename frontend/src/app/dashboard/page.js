@@ -41,7 +41,6 @@ const Dashboard = () => {
   return (
     <div>
       <h1>Welcome, {userName}</h1>
-      <h2>My Bookings</h2>
       {bookings.map((booking) => (
         <BookingCard key={booking._id} booking={booking} />
       ))}

@@ -1,6 +1,8 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { ChakraProvider } from "@chakra-ui/react";
+import "mapbox-gl/dist/mapbox-gl.css";
+import { NextUIProvider } from "@nextui-org/react";
+
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import Head from "next/head";
 import { AuthProvider } from "./hooks/AuthContext";
@@ -19,14 +21,18 @@ export default function RootLayout({ children }) {
         <html lang="en">
           <Head>
             <title>{metadata.title}</title>
+            <link
+              href="https://api.mapbox.com/mapbox-gl-js/v2.8.1/mapbox-gl.css"
+              rel="stylesheet"
+            />
             <meta name="description" content={metadata.description} />
             <meta
               name="viewport"
               content="width=device-width, initial-scale=1"
             />
           </Head>
-          <body className={inter.className}>
-            <ChakraProvider>{children}</ChakraProvider>
+          <body className={`${inter.className} bg-white min-h-screen`}>
+            <NextUIProvider>{children}</NextUIProvider>
           </body>
         </html>
       </GoogleOAuthProvider>

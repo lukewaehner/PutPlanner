@@ -1,7 +1,10 @@
 {
   "compilerOptions": {
+    "baseUrl": "./src",
     "paths": {
-      "@/*": ["./src/*"]
-    }
+      "@/*": ["./src/*"],
+      "@nextui-org/react": ["node_modules/@nextui-org/react"]
+    },
+    "jsx": "react-jsx"
   }
 }

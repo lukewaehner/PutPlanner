@@ -1,30 +1,24 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import {
-  Box,
-  Heading,
-  Text,
-  Flex,
-  Divider,
-  AbsoluteCenter,
-  IconButton,
-  Skeleton,
-  Menu,
-  MenuList,
-  MenuButton,
-  MenuItem,
   Button,
-} from "@chakra-ui/react";
-import { ArrowBackIcon, ChevronDownIcon } from "@chakra-ui/icons";
+  Card,
+  Divider,
+  Grid,
+  Image,
+  Link,
+  Spacer,
+  Text,
+} from "@nextui-org/react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../hooks/AuthContext";
-
 import InstructorCard from "../../components/InstructorCard";
+import { FaArrowLeft } from "react-icons/fa";
+import { FaChevronDown } from "react-icons/fa";
 
 function ClubPage() {
   const [club, setClub] = useState(null);
   const Router = useRouter();
-
   const { userName } = useAuth();
 
   const handleSettings = () => {
@@ -66,150 +60,109 @@ function ClubPage() {
 
   if (!club) {
     return (
-      <Box>
+      <div>
         {/* Loading UI */}
-        <IconButton
-          icon={<ArrowBackIcon />}
-          aria-label="Go back"
+        <Button
+          auto
+          icon={<FaArrowLeft />}
           onClick={handleGoBack}
-          position="absolute"
-          top="20px"
-          left="20px"
-          zIndex="1"
-          colorScheme="gray"
+          css={{ position: "absolute", top: 20, left: 20, zIndex: 1 }}
         />
-        <Box
-          style={{
+        <Card
+          cover
+          css={{
+            height: "42vh",
             backgroundImage: `url(${club?.image || ""})`,
+            bgColor: "gray.200", // Fallback color
+            bgSize: "cover",
+            bgPosition: "center",
+            bgRepeat: "no-repeat",
+            position: "relative",
           }}
-          bgColor="gray.200" // Fallback color
-          bgSize="cover"
-          bgPosition="center"
-          bgRepeat="no-repeat"
-          height="42vh"
-          position="relative"
         >
-          <Box
-            position="absolute"
-            bottom="20px"
-            left="20px"
-            bg="white"
-            p="20px"
-            borderRadius="md"
-            boxShadow="md"
-            height="200px"
-            width="350px"
-          >
+          <Card.Body css={{ position: "absolute", bottom: 20, left: 20 }}>
             <Skeleton height="30px" mb="10px" />
             <Skeleton height="20px" mb="10px" />
             <Skeleton height="20px" mb="10px" />
             <Skeleton height="20px" width="50%" />
-          </Box>
-        </Box>
+          </Card.Body>
+        </Card>
 
         {/* Skeleton for Instructors Section */}
-        <Box p={8}>
-          <Skeleton height="30px" width="8%" mb={4} />
-          <Flex flexWrap="wrap" justify="center">
+        <div style={{ padding: "32px" }}>
+          <Skeleton height="30px" width="8%" mb="16px" />
+          <Grid.Container gap={2} justify="center">
             {[1, 2, 3].map((index) => (
               <InstructorCard key={index} instructor={index} />
             ))}
-          </Flex>
-        </Box>
-      </Box>
+          </Grid.Container>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Box>
+    <div>
       {/* Back Button */}
-      <IconButton
-        icon={<ArrowBackIcon />}
-        aria-label="Go back"
+      <Button
+        auto
+        icon={<FaArrowLeft />}
         onClick={handleGoBack}
-        position="absolute"
-        top="20px"
-        left="20px"
-        zIndex="1"
-        colorScheme="gray"
+        css={{ position: "absolute", top: 20, left: 20, zIndex: 1 }}
       />
 
-      {/* Menu */}
-      <Menu>
-        <MenuButton
-          as={Button}
-          rightIcon={<ChevronDownIcon />}
-          aria-label="User menu"
-          icon={<ChevronDownIcon />}
-          mr={4}
-          position="absolute"
-          top="20px"
-          right="20px"
-          zIndex="1"
-          colorScheme="gray"
-        >
-          Welcome, {userName}
-        </MenuButton>
-        <MenuList>
-          <MenuItem onClick={handleSettings}>Settings</MenuItem>
-          <MenuItem onClick={handleDashboard}>Dashboard</MenuItem>
-        </MenuList>
-      </Menu>
+      {/* User Menu */}
+      <Button
+        auto
+        iconRight={<FaChevronDown />}
+        css={{ position: "absolute", top: 20, right: 20, zIndex: 1 }}
+        onClick={handleDashboard}
+      >
+        Welcome, {userName}
+      </Button>
 
       {/* Club Info Section */}
-      <Box
-        style={{
+      <Card
+        cover
+        css={{
+          height: "42vh",
           backgroundImage: `url(${club.image})`,
+          bgColor: "gray.200", // Fallback color
+          bgSize: "cover",
+          bgPosition: "center",
+          bgRepeat: "no-repeat",
+          position: "relative",
         }}
-        bgColor="gray.200" // Fallback color
-        bgSize="cover"
-        bgPosition="center"
-        bgRepeat="no-repeat"
-        height="42vh"
-        position="relative"
       >
-        <Box
-          position="absolute"
-          bottom="20px"
-          left="20px"
-          bg="white"
-          p="20px"
-          borderRadius="md"
-          boxShadow="md"
-          maxHeight="200px"
-          maxWidth="400px"
-          overflow="hidden"
-        >
-          <Heading as="h1" size="xl" mb={2} color="black">
+        <Card.Body css={{ position: "absolute", bottom: 20, left: 20 }}>
+          <Text h1 size={30} weight="bold" color="white">
             {club.name}
-          </Heading>
-          <Box position="relative" padding="3">
-            <Divider />
-            <AbsoluteCenter bg="white" px="4">
-              Info
-            </AbsoluteCenter>
-          </Box>
-          <Text fontSize="lg" mb={4} color="black">
+          </Text>
+          <Spacer y={0.5} />
+          <Divider />
+          <Spacer y={0.5} />
+          <Text size={18} color="white">
             {club.description}
           </Text>
-          <Text fontSize="md" color="black">
+          <Text size={16} color="white">
             {club.address}
           </Text>
-        </Box>
-      </Box>
+        </Card.Body>
+      </Card>
 
       {/* Instructors Section */}
-      <Box p={8}>
-        <Heading as="h2" size="lg" mb={4}>
+      <div style={{ padding: "32px" }}>
+        <Text h2 size={24} weight="bold">
           Instructors
-        </Heading>
-        <Flex flexWrap="wrap" justify="center">
+        </Text>
+        <Spacer y={1} />
+        <Grid.Container gap={2} justify="center">
           {club.instructors.map((instructor) => (
             <InstructorCard key={instructor._id} instructor={instructor} />
           ))}
-        </Flex>
-      </Box>
-    </Box>
+        </Grid.Container>
+      </div>
+    </div>
   );
 }
 

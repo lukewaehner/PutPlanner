@@ -2,8 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-* {
-  /* border: 1px solid red; */
+body {
+  @apply bg-white;
 }
 
 html,
@@ -67,10 +67,6 @@ body {
 }
 
 #info {
-}
-
-#map {
-  background: radial-gradient(white, rgb(205, 205, 205));
 }
 
 @layer utilities {

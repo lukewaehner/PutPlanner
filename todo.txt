@@ -1,0 +1,6 @@
+Use mapbox
+Change it to /browse/golf/(state)/(town)/(club)/
+
+Use desaigns from teachme.to
+
+Add a zipcode searcher / location searcher
